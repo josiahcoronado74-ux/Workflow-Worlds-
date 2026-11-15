@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#262624">
+<title>Workflow Worlds</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#262624;--panel:#30302e;--raise:#3a3936;--line:#4a4945;
+  --ink:#faf9f5;--dim:#c2c0b6;--faint:#a3a198;
+  --accent:#c15f3c;--accent-d:#a64f30;--warn:#f0a090;
+  --serif:ui-serif,'Iowan Old Style','Palatino Linotype',Georgia,'Times New Roman',serif;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);font-family:var(--sans);font-size:16px;line-height:1.45;color:var(--ink);-webkit-tap-highlight-color:transparent}
+#app{max-width:560px;margin:0 auto;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column;padding-top:env(safe-area-inset-top)}
+h1{font-family:var(--serif);font-size:28px;font-weight:500;margin:22px 16px 14px;letter-spacing:-.01em}
+button,input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* list */
+.list{flex:1;padding:4px 12px 12px;overflow-y:auto}
+.row{display:flex;gap:14px;align-items:center;width:100%;text-align:left;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:8px;cursor:pointer}
+.row.sel{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.mos{width:48px;height:48px;display:grid;grid-template-columns:1fr 1fr;gap:3px;flex:none}
+.mos span{border-radius:5px}
+.rt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.rt b{font-family:var(--serif);font-weight:500;font-size:19px;overflow-wrap:anywhere}
+.rt i{font-style:normal;color:var(--dim);font-size:15px;overflow-wrap:anywhere}
+.rt small{color:var(--faint);font-size:14px}
+.rt .live{color:#e8a287}
+.empty{padding:28px 14px;text-align:center;color:var(--dim)}
+
+/* buttons */
+.bar{position:sticky;bottom:0;padding:12px 12px calc(12px + env(safe-area-inset-bottom));display:grid;grid-template-columns:minmax(0,1fr);gap:8px;background:var(--bg);border-top:1px solid var(--line)}
+.r2{display:grid;gap:8px;grid-template-columns:repeat(var(--n,3),minmax(0,1fr))}
+.btn{min-width:0;min-height:48px;padding:8px 10px;background:var(--raise);border:1px solid var(--line);border-radius:10px;cursor:pointer;font-size:16px;font-weight:500}
+.btn:active{background:#45443f}
+.btn.go{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.go:active{background:var(--accent-d)}
+.btn.bad{color:var(--warn)}
+.btn.sm{min-height:44px;min-width:44px;padding:4px 12px}
+.btn[disabled]{opacity:.45;cursor:default}
+.link{background:none;border:0;color:var(--dim);text-decoration:underline;padding:10px;min-height:44px;cursor:pointer;font-size:15px}
+
+/* cards, forms */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin:10px 12px}
+.blk{border-left:4px solid var(--c)}
+.bh{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.bh strong{font-family:var(--serif);font-weight:500;font-size:19px;flex:1;min-width:0;overflow-wrap:anywhere}
+.chip{background:var(--bg);border:1px solid var(--line);border-radius:999px;min-width:28px;text-align:center;padding:1px 8px;font-size:14px;color:var(--dim)}
+label{display:block;margin-top:12px;color:var(--dim);font-size:15px}
+.in{display:block;width:100%;margin-top:6px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:10px;font-size:16px}
+.in:focus{border-color:var(--accent);outline:none}
+textarea.in{min-height:96px;resize:vertical}
+.hint{color:var(--faint);font-size:14px;margin-top:6px}
+.adds{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+
+/* play */
+.top{display:flex;align-items:center;gap:8px;padding:12px 12px 0}
+.top .t{flex:1;min-width:0;font-family:var(--serif);font-size:19px;font-weight:500;overflow-wrap:anywhere}
+.timer{color:var(--dim);font-size:15px;font-variant-numeric:tabular-nums}
+.strip{display:flex;gap:8px;padding:12px;overflow-x:auto}
+.sq{width:44px;height:44px;flex:none;border:0;border-radius:10px;background:var(--c);cursor:pointer;opacity:.5;color:#fff;font-weight:600}
+.sq.cur{opacity:1;outline:2px solid var(--ink);outline-offset:2px}
+.sq.done{opacity:.8}
+.stage{border-left:4px solid var(--c)}
+.stage h2{margin:2px 0 0;font-family:var(--serif);font-weight:500;font-size:24px}
+.stage .role{color:var(--dim);font-size:15px}
+pre#pv{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-size:15px;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;margin:12px 0;max-height:34vh;overflow:auto}
+.fill{flex:1}
+
+/* modal + toast */
+.ov{position:fixed;inset:0;display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.bd{position:absolute;inset:0;background:rgba(0,0,0,.6)}
+.md{position:relative;width:100%;max-width:560px;max-height:88vh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-bottom:0;border-radius:16px 16px 0 0;padding:18px 16px calc(16px + env(safe-area-inset-bottom))}
+.md h2{margin:0 0 10px;font-family:var(--serif);font-weight:500;font-size:22px}
+.md ol{margin:10px 0;padding-left:22px}
+.md li{margin-bottom:6px}
+#toast{position:fixed;left:50%;top:calc(14px + env(safe-area-inset-top));transform:translateX(-50%);background:var(--raise);border:1px solid var(--line);border-radius:10px;padding:10px 16px;z-index:30;max-width:90vw;text-align:center}
+#toast[hidden]{display:none}
+.big{font-family:var(--serif);font-size:30px;font-weight:500;text-align:center;margin:30px 16px 6px}
+.sub{text-align:center;color:var(--dim);margin:0 16px}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" hidden role="status"></div>
+
+<script>
+'use strict';
+/* ---------- apps ---------- */
+const APPS={
+  chatgpt:{name:'ChatGPT',color:'#3f9c82',url:'https://chatgpt.com/',pkg:'com.openai.chatgpt'},
+  gemini:{name:'Gemini',color:'#5b84c4',url:'https://gemini.google.com/app',pkg:'com.google.android.apps.bard'},
+  claude:{name:'Claude',color:'#c9785a',url:'https://claude.ai/new',pkg:'com.anthropic.claude'},
+  notebooklm:{name:'NotebookLM',color:'#b09040',url:'https://notebooklm.google.com/',pkg:'com.google.android.apps.labs.language.tailwind'},
+  custom:{name:'Custom app',color:'#7d7b74'}
+};
+
+/* ---------- storage ---------- */
+const KEY='workflow-worlds.v1';
+let memStore=null;
+function load(){try{const r=localStorage.getItem(KEY);return r?JSON.parse(r):memStore}catch(e){return memStore}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(db))}catch(e){memStore=JSON.parse(JSON.stringify(db))}}
+
+/* ---------- helpers ---------- */
+function uid(){return Math.random().toString(36).slice(2,9)}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function mk(app,role,prompt){return{id:uid(),app,role:role||'',prompt:prompt||'',name:'',url:''}}
+function clone(o){return JSON.parse(JSON.stringify(o))}
+function stepName(s){return s.app==='custom'?(s.name||'Custom app'):APPS[s.app].name}
+function stepColor(s){return (APPS[s.app]||APPS.custom).color}
+function chain(w){return w.steps.map(stepName).join(' → ')}
+function find(id){return db.workflows.find(w=>w.id===id)}
+function fmt(ms){const t=Math.max(0,Math.floor(ms/1000)),h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;
+  return (h?h+':'+String(m).padStart(2,'0'):m)+':'+String(s).padStart(2,'0')}
+function ago(ts){if(!ts)return'never played';const m=Math.floor((Date.now()-ts)/60000);
+  if(m<1)return'played just now';if(m<60)return'played '+m+'m ago';const h=Math.floor(m/60);
+  if(h<24)return'played '+h+'h ago';return'played '+Math.floor(h/24)+'d ago'}
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.hidden=false;
+  clearTimeout(toast.t);toast.t=setTimeout(()=>{el.hidden=true},2200)}
+function copy(t){let ok=false;
+  try{const ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;opacity:0;top:0';
+    document.body.appendChild(ta);ta.select();ok=document.execCommand('copy');ta.remove()}catch(e){}
+  try{navigator.clipboard&&navigator.clipboard.writeText(t)}catch(e){}
+  return ok}
+function go(h){const t='#/'+h;if(location.hash===t)render();else location.hash=t}
+
+/* ---------- data ---------- */
+function seed(){return[
+  {id:uid(),name:'Research Sprint',runs:0,last:0,lastTime:0,steps:[
+    mk('gemini','Researcher','Research this topic and list the key findings with sources:\n\n[topic]'),
+    mk('claude','Judge','Stress-test these findings. Point out weak claims, gaps, and what you would push back on.\n\n{handoff}'),
+    mk('chatgpt','Editor','Turn the vetted points into a clean, short summary.\n\n{handoff}')]},
+  {id:uid(),name:'Draft and Critique',runs:0,last:0,lastTime:0,steps:[
+    mk('chatgpt','Drafter','Write a first draft of:\n\n[what you need]'),
+    mk('claude','Critic','Give honest feedback on this draft. What is weak, unclear, or missing?\n\n{handoff}')]}
+]}
+let db=load()||{workflows:seed(),session:null};
+if(!Array.isArray(db.workflows))db.workflows=[];
+let sel=null,draft=null,modal=null,tick=null;
+
+/* ---------- launching ---------- */
+function launchApp(st){
+  const a=APPS[st.app];
+  const raw=st.app==='custom'?(st.url||'').trim():a.url;
+  if(!raw){toast('This step has no link. Add one in Edit.');return}
+  if(!/^https?:\/\//i.test(raw)&&/^[a-z][a-z0-9+.-]*:/i.test(raw)){location.href=raw;return}
+  const full=/^https?:\/\//i.test(raw)?raw:'https://'+raw;
+  if(a.pkg){
+    try{const u=new URL(full);
+      location.href='intent://'+u.host+u.pathname+u.search+'#Intent;scheme='+u.protocol.slice(0,-1)+
+        ';package='+a.pkg+';S.browser_fallback_url='+encodeURIComponent(full)+';end';return}catch(e){}
+  }
+  window.open(full,'_blank');
+}
+function openBrowser(st){const raw=st.app==='custom'?(st.url||'').trim():APPS[st.app].url;
+  if(raw)window.open(/^https?:\/\//i.test(raw)?raw:'https://'+raw,'_blank')}
+function curStep(){const s=db.session,w=s&&find(s.wf);return w?w.steps[s.i]:null}
+function promptText(){const st=curStep();if(!st)return'';
+  return(st.prompt||'').replace(/\{handoff\}/g,db.session.handoff.trim()||'[handoff is empty]')}
+
+/* ---------- views ---------- */
+function mosaic(w){let h='';for(let i=0;i<4;i++)h+='<span style="background:'+(w.steps[i]?stepColor(w.steps[i]):'#3a3936')+'"></span>';
+  return'<div class="mos" aria-hidden="true">'+h+'</div>'}
+
+function viewHome(){
+  document.title='Workflow Worlds';
+  if(!find(sel))sel=(db.workflows[0]||{}).id;
+  const rows=db.workflows.map(w=>{
+    const live=db.session&&db.session.wf===w.id;
+    const meta=live?'<small class="live">In progress, step '+(db.session.i+1)+' of '+w.steps.length+'</small>'
+      :'<small>'+w.steps.length+(w.steps.length===1?' step, ':' steps, ')+ago(w.last)+'</small>';
+    return'<button class="row'+(w.id===sel?' sel':'')+'" data-act="select" data-id="'+w.id+'" aria-pressed="'+(w.id===sel)+'">'+
+      mosaic(w)+'<span class="rt"><b>'+esc(w.name)+'</b><i>'+esc(chain(w))+'</i>'+meta+'</span></button>'}).join('');
+  const none=!db.workflows.length;
+  return'<h1>Your workflows</h1><div class="list">'+(rows||'<p class="empty">No workflows yet. Tap New to draft your first one.</p>')+'</div>'+
+    '<div class="bar"><button class="btn go" data-act="play"'+(none?' disabled':'')+'>Start workflow</button>'+
+    '<div class="r2" style="--n:4"><button class="btn" data-act="edit"'+(none?' disabled':'')+'>Edit</button>'+
+    '<button class="btn" data-act="new">New</button>'+
+    '<button class="btn bad" data-act="del"'+(none?' disabled':'')+'>Delete</button>'+
+    '<button class="btn" data-act="backup">Backup</button></div></div>';
+}
+
+function appOptions(cur){return Object.keys(APPS).map(k=>'<option value="'+k+'"'+(k===cur?' selected':'')+'>'+APPS[k].name+'</option>').join('')}
+
+function viewEdit(){
+  const d=draft;document.title=d.name||'New workflow';
+  const blocks=d.steps.map((s,i)=>{
+    const custom=s.app==='custom';
+    return'<div class="card blk" style="--c:'+stepColor(s)+'"><div class="bh"><span class="chip">'+(i+1)+'</span><strong>'+esc(stepName(s))+'</strong>'+
+      '<button class="btn sm" data-act="up" data-i="'+i+'" aria-label="Move step up"'+(i===0?' disabled':'')+'>▲</button>'+
+      '<button class="btn sm" data-act="down" data-i="'+i+'" aria-label="Move step down"'+(i===d.steps.length-1?' disabled':'')+'>▼</button>'+
+      '<button class="btn sm bad" data-act="rm" data-i="'+i+'" aria-label="Remove step">✕</button></div>'+
+      '<label>App<select class="in" data-k="app" data-i="'+i+'">'+appOptions(s.app)+'</select></label>'+
+      (custom?'<label>App name<input class="in" data-k="name" data-i="'+i+'" value="'+esc(s.name)+'" placeholder="e.g. Notes"></label>'+
+        '<label>Link<input class="in" data-k="url" data-i="'+i+'" value="'+esc(s.url)+'" placeholder="https://… or an app link" autocapitalize="none" autocorrect="off" spellcheck="false"></label>':'')+
+      '<label>Role label<input class="in" data-k="role" data-i="'+i+'" value="'+esc(s.role)+'" placeholder="Researcher, Judge, Editor…"></label>'+
+      '<label>Prompt template<textarea class="in" data-k="prompt" data-i="'+i+'" placeholder="What to paste into this app">'+esc(s.prompt)+'</textarea></label>'+
+      '<div class="hint">Type {handoff} to insert the output you paste in the previous step.</div></div>'}).join('');
+  const adds=['chatgpt','gemini','claude','notebooklm','custom'].map(k=>'<button class="btn sm" data-act="addstep" data-app="'+k+'">+ '+APPS[k].name+'</button>').join('');
+  return'<h1>'+(d.isNew?'New Workflow':'Edit Workflow')+'</h1>'+
+    '<div class="card"><label style="margin-top:0">Workflow name<input class="in" data-k="name" value="'+esc(d.name)+'" placeholder="Research Sprint"></label></div>'+
+    blocks+'<div class="card"><div>Add a step</div><div class="adds">'+adds+'</div></div><div class="fill"></div>'+
+    '<div class="bar"><div class="r2" style="--n:2"><button class="btn go" data-act="save">Save</button><button class="btn" data-act="cancel">Cancel</button></div></div>';
+}
+
+function viewPlay(id){
+  const w=find(id);if(!w){go('');return''}
+  let s=db.session;
+  if(!s||s.wf!==id){s=db.session={wf:id,i:0,done:[],notes:{},handoff:'',t0:Date.now()};save()}
+  if(s.i>=w.steps.length)s.i=w.steps.length-1;
+  document.title=w.name;
+  const st=w.steps[s.i],last=s.i===w.steps.length-1;
+  const strip=w.steps.map((x,i)=>'<button class="sq'+(i===s.i?' cur':'')+(s.done[i]?' done':'')+'" style="--c:'+stepColor(x)+'" data-act="jump" data-i="'+i+'" aria-label="Step '+(i+1)+': '+esc(stepName(x))+(s.done[i]?' (done)':'')+'">'+(s.done[i]?'✓':i+1)+'</button>').join('');
+  tick=setInterval(()=>{const el=document.getElementById('tm');if(el&&db.session)el.textContent=fmt(Date.now()-db.session.t0)},1000);
+  const pt=promptText();
+  return'<div class="top"><button class="btn sm" data-act="exit">Exit</button><div class="t">'+esc(w.name)+'</div><span class="timer" id="tm">'+fmt(Date.now()-s.t0)+'</span>'+
+    '<button class="btn sm" data-act="pin" data-id="'+w.id+'">Pin</button></div>'+
+    '<div class="strip">'+strip+'</div>'+
+    '<div class="card stage" style="--c:'+stepColor(st)+'"><div class="role">Step '+(s.i+1)+' of '+w.steps.length+(st.role?', '+esc(st.role):'')+'</div>'+
+    '<h2>'+esc(stepName(st))+'</h2>'+
+    '<pre id="pv">'+(esc(pt)||'No prompt template for this step. Just open the app.')+'</pre>'+
+    '<button class="btn go" style="width:100%" data-act="launch">'+(pt?'Copy prompt and open '+esc(stepName(st)):'Open '+esc(stepName(st)))+'</button>'+
+    '<button class="link" data-act="open">Open without copying</button></div>'+
+    '<div class="card"><label style="margin-top:0">Notes for this step<textarea class="in" data-sk="notes" placeholder="Anything worth keeping">'+esc(s.notes[s.i]||'')+'</textarea></label>'+
+    '<label>Handoff: paste this step\'s output for the next step<textarea class="in" data-sk="handoff" placeholder="Paste the AI\'s answer here">'+esc(s.handoff)+'</textarea></label></div>'+
+    '<div class="fill"></div><div class="bar"><div class="r2" style="--n:2"><button class="btn" data-act="prev"'+(s.i===0?' disabled':'')+'>Back</button>'+
+    '<button class="btn go" data-act="next">'+(last?'Finish':'Done, next step')+'</button></div></div>';
+}
+
+function viewDone(id){
+  const w=find(id);if(!w){go('');return''}
+  document.title='Workflow complete';
+  return'<div class="fill"></div><div class="big">Workflow complete</div><p class="sub">'+esc(w.name)+', finished in '+fmt(w.lastTime||0)+'.<br>Times played: '+(w.runs||0)+'</p><div class="fill"></div>'+
+    '<div class="bar"><button class="btn go" data-act="again" data-id="'+w.id+'">Play again</button><button class="btn" data-act="exit">Back to list</button></div>';
+}
+
+function modalHtml(){return'<div class="ov"><div class="bd" data-act="close"></div><div class="md">'+modal+'</div></div>'}
+function pinModal(id){
+  const url=location.href.split('#')[0]+'#/play/'+id,standalone=window.matchMedia&&matchMedia('(display-mode: standalone)').matches;
+  return'<h2>Pin this workflow to your home screen</h2><textarea class="in" readonly style="min-height:70px" id="pinurl">'+esc(url)+'</textarea>'+
+    '<ol><li>'+(standalone?'Copy the link below and paste it into Chrome.':'Open this page in Chrome.')+'</li><li>Tap the Chrome menu (three dots), then Add to Home screen.</li><li>Name it and confirm. Tapping that icon opens this workflow directly.</li></ol>'+
+    '<div class="r2" style="--n:2"><button class="btn" data-act="copylink">Copy link</button><button class="btn" data-act="close">Close</button></div>';
+}
+function backupModal(){
+  return'<h2>Backup and restore</h2><div class="hint" style="margin:0 0 6px">Copy this text somewhere safe. To restore, paste it below and tap Import. Imported workflows are added, nothing is overwritten.</div>'+
+    '<textarea class="in" readonly id="exp" style="min-height:110px">'+esc(JSON.stringify({workflows:db.workflows},null,1))+'</textarea>'+
+    '<button class="btn" style="width:100%;margin-top:8px" data-act="copyexp">Copy backup</button>'+
+    '<label>Paste to import<textarea class="in" id="imp" placeholder="Paste a backup here"></textarea></label>'+
+    '<div class="r2" style="--n:2;margin-top:10px"><button class="btn go" data-act="import">Import</button><button class="btn" data-act="close">Close</button></div>';
+}
+
+/* ---------- render ---------- */
+function render(){
+  clearInterval(tick);
+  const y=window.scrollY,parts=location.hash.replace(/^#\/?/,'').split('/'),r=parts[0],id=parts[1];
+  let html;
+  if(r==='new'||r==='edit'){
+    if(!draft||(r==='edit'&&draft.id!==id)){
+      if(r==='new')draft={id:uid(),name:'',runs:0,last:0,lastTime:0,isNew:true,steps:[mk('gemini','Researcher','')]};
+      else{const w=find(id);if(!w){go('');return}draft=clone(w)}
+    }
+    html=viewEdit();
+  }else if(r==='play')html=viewPlay(id);
+  else if(r==='done')html=viewDone(id);
+  else{draft=null;html=viewHome()}
+  document.getElementById('app').innerHTML=html+(modal?modalHtml():'');
+  window.scrollTo(0,y);
+}
+window.addEventListener('hashchange',()=>{modal=null;render();window.scrollTo(0,0)});
+
+/* ---------- events ---------- */
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b||b.disabled)return;
+  const act=b.dataset.act,i=+b.dataset.i,id=b.dataset.id,s=db.session;
+  switch(act){
+    case'select':sel=id;render();break;
+    case'play':if(sel)go('play/'+sel);break;
+    case'new':draft=null;go('new');break;
+    case'edit':if(sel){draft=null;go('edit/'+sel)}break;
+    case'del':{const w=find(sel);if(w&&confirm('Delete "'+w.name+'"? This cannot be undone.')){
+      db.workflows=db.workflows.filter(x=>x.id!==sel);if(s&&s.wf===sel)db.session=null;sel=null;save();render()}break}
+    case'backup':modal=backupModal();render();break;
+    case'close':modal=null;render();break;
+    case'copyexp':copy(document.getElementById('exp').value);toast('Backup copied');break;
+    case'copylink':copy(document.getElementById('pinurl').value);toast('Link copied');break;
+    case'import':{try{
+      let j=JSON.parse(document.getElementById('imp').value);if(Array.isArray(j))j={workflows:j};
+      const ok=(j.workflows||[]).filter(w=>w&&Array.isArray(w.steps)&&w.steps.length);
+      ok.forEach(w=>{w.id=uid();w.steps.forEach(x=>{x.id=uid();if(!APPS[x.app])x.app='custom'});w.runs=w.runs||0;w.last=w.last||0;db.workflows.push(w)});
+      save();modal=null;render();toast(ok.length+' imported')}catch(err){toast('That is not a valid backup.')}break}
+    case'cancel':draft=null;go('');break;
+    case'addstep':draft.steps.push(mk(b.dataset.app,'',''));render();break;
+    case'up':if(i>0){const a=draft.steps;[a[i-1],a[i]]=[a[i],a[i-1]];render()}break;
+    case'down':if(i<draft.steps.length-1){const a=draft.steps;[a[i+1],a[i]]=[a[i],a[i+1]];render()}break;
+    case'rm':draft.steps.splice(i,1);render();break;
+    case'save':{const d=draft;if(!d.steps.length){toast('Add at least one step.');break}
+      d.name=(d.name||'').trim()||'Untitled workflow';d.steps.forEach(x=>{x.role=(x.role||'').trim()});delete d.isNew;
+      const ix=db.workflows.findIndex(w=>w.id===d.id);if(ix>=0)db.workflows[ix]=d;else db.workflows.push(d);
+      if(s&&s.wf===d.id)db.session=null;sel=d.id;save();draft=null;go('');break}
+    case'exit':go('');break;
+    case'pin':modal=pinModal(id);render();break;
+    case'jump':s.i=i;save();render();break;
+    case'prev':if(s.i>0){s.i--;save();render();window.scrollTo(0,0)}break;
+    case'launch':{const t=promptText();if(t){copy(t);toast('Prompt copied')}launchApp(curStep());break}
+    case'open':openBrowser(curStep());break;
+    case'next':{s.done[s.i]=true;const w=find(s.wf);
+      if(s.i<w.steps.length-1){s.i++;save();render();window.scrollTo(0,0)}
+      else{w.runs=(w.runs||0)+1;w.last=Date.now();w.lastTime=Date.now()-s.t0;db.session=null;save();go('done/'+w.id)}break}
+    case'again':db.session=null;go('play/'+id);break;
+  }
+});
+document.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.dataset.k!==undefined&&draft){
+    if(t.dataset.i!==undefined)draft.steps[+t.dataset.i][t.dataset.k]=t.value;else draft[t.dataset.k]=t.value;
+  }else if(t.dataset.sk&&db.session){
+    const s=db.session;if(t.dataset.sk==='notes')s.notes[s.i]=t.value;else s.handoff=t.value;
+    save();const pv=document.getElementById('pv');if(pv)pv.textContent=promptText()||'No prompt template for this step. Just open the app.';
+  }
+});
+document.addEventListener('change',e=>{
+  const t=e.target;if(t.dataset.k==='app'&&draft){draft.steps[+t.dataset.i].app=t.value;render()}
+});
+
+/* ---------- start ---------- */
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol)){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+render();
+</script>
+</body>
+</html>
